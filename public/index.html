@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Movie Review Hub</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>🎬 Movie Review Hub</h1>
+  <a href="add-movie.html" class="btn">+ Add Movie</a>
+</header>
+
+<input type="text" id="search" placeholder="Search movies...">
+
+<div id="movies" class="grid"></div>
+
+<script>
+let allMovies = [];
+
+fetch("/movies")
+  .then(res => res.json())
+  .then(data => {
+    allMovies = data;
+    displayMovies(data);
+  });
+
+function displayMovies(movies) {
+  const container = document.getElementById("movies");
+  container.innerHTML = "";
+
+  movies.forEach(movie => {
+    container.innerHTML += `
+      <div class="card" onclick="openMovie('${movie._id}')">
+        <img src="${movie.poster}">
+        <div class="card-body">
+          <h3>${movie.title}</h3>
+          <p>${movie.genre} • ${movie.year}</p>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function openMovie(id) {
+  window.location.href = "/movie/" + id;
+}
+
+document.getElementById("search").addEventListener("input", function() {
+  const value = this.value.toLowerCase();
+  const filtered = allMovies.filter(m =>
+    m.title.toLowerCase().includes(value)
+  );
+  displayMovies(filtered);
+});
+</script>
+
+</body>
+</html>
