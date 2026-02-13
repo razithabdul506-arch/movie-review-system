@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Movie Detail</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<a href="index.html" class="back-btn">⬅ Back</a>
+
+<div class="container" id="movie-container">
+  <p>Loading movie...</p>
+</div>
+
+<script>
+async function getMovieId() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("id");
+}
+
+async function loadMovie() {
+  const movieId = await getMovieId();
+  if (!movieId) {
+    document.getElementById("movie-container").innerHTML = "No movie ID provided.";
+    return;
+  }
+
+  const res = await fetch(`/movie/${movieId}`);
+  const data = await res.json();
+
+  const movie = data.movie;
+  const reviews = data.reviews;
+
+  if (!movie || movie.Response === "False") {
+    document.getElementById("movie-container").innerHTML = "Movie not found.";
+    return;
+  }
+
+  const avgRating =
+    reviews.length > 0
+      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+      : "No ratings yet";
+
+  const container = document.getElementById("movie-container");
+  container.innerHTML = `
+    <div class="movie-detail">
+      <img src="${movie.Poster !== "N/A" ? movie.Poster : 'https://via.placeholder.com/300x450'}">
+      <div>
+        <h1>${movie.Title}</h1>
+        <p>${movie.Year} • ${movie.Genre}</p>
+        <p>${movie.Plot}</p>
+        <h3>⭐ ${avgRating}</h3>
+      </div>
+    </div>
+
+    <hr>
+
+    <h2>Add Review</h2>
+    <form id="review-form">
+      <input type="hidden" name="movieId" value="${movie.imdbID}">
+      <input type="hidden" name="title" value="${movie.Title}">
+      <input type="text" name="username" placeholder="Your Name" required>
+      <input type="number" name="rating" min="1" max="5" placeholder="Rating (1-5)" required>
+      <textarea name="comment" placeholder="Write review..." required></textarea>
+      <button type="submit">Submit Review</button>
+    </form>
+
+    <h2>Reviews</h2>
+    <div id="reviews">
+      ${reviews.map(r => `
+        <div class="review">
+          <strong>${r.username}</strong> ⭐ ${r.rating}
+          <p>${r.comment}</p>
+        </div>
+      `).join("") || "<p>No reviews yet 😢</p>"}
+    </div>
+  `;
+
+  document.getElementById("review-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const body = {};
+    formData.forEach((v, k) => body[k] = v);
+
+    await fetch("/add_review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    loadMovie(); // reload reviews
+  });
+}
+
+loadMovie();
+</script>
+</body>
+</html>

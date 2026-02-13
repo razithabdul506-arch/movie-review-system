@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>🎬 Movie Review Hub</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>🎬 Movie Review Hub</h1>
+</header>
+
+<div class="search-bar">
+  <input type="text" id="search" placeholder="Search movies...">
+  <button onclick="searchMovies()">Search</button>
+</div>
+
+<div class="grid" id="movies"></div>
+<div style="text-align:center; margin-bottom:30px;">
+  <button id="load-more-btn" onclick="loadMore()">Load More Movies</button>
+</div>
+
+<script>
+let allMovies = [];
+let displayedCount = 0;
+const perPage = 12;
+
+// Load popular movies
+async function loadPopular() {
+  const res = await fetch("/movies");
+  const data = await res.json();
+  allMovies = data;
+  displayedCount = 0;
+  displayMovies();
+}
+
+// Display movies with pagination
+function displayMovies() {
+  const container = document.getElementById("movies");
+  const slice = allMovies.slice(displayedCount, displayedCount + perPage);
+  slice.forEach(movie => {
+    container.innerHTML += `
+      <div class="card">
+        <a href="movie.html?id=${movie.imdbID}">
+          <img src="${movie.Poster !== "N/A" ? movie.Poster : "https://via.placeholder.com/300x450"}" loading="lazy">
+          <div class="card-body">
+            <h3>${movie.Title}</h3>
+            <p>${movie.Year}</p>
+          </div>
+        </a>
+      </div>
+    `;
+  });
+  displayedCount += perPage;
+  document.getElementById("load-more-btn").style.display = displayedCount >= allMovies.length ? "none" : "inline-block";
+}
+
+// Search movies
+async function searchMovies() {
+  const query = document.getElementById("search").value.trim();
+  if (!query) return loadPopular();
+
+  const res = await fetch(`/movies?query=${encodeURIComponent(query)}`);
+  const data = await res.json();
+  allMovies = data;
+  displayedCount = 0;
+
+  const container = document.getElementById("movies");
+  container.innerHTML = "";
+  if (allMovies.length === 0) {
+    container.innerHTML = `<p style="text-align:center; grid-column: 1/-1;">No movies found 😢</p>
+                           <div style="text-align:center; margin-top:10px;">
+                             <button onclick="loadPopular()">⬅ Back to popular movies</button>
+                           </div>`;
+    document.getElementById("load-more-btn").style.display = "none";
+    return;
+  }
+  displayMovies();
+}
+
+// Load more button
+function loadMore() {
+  displayMovies();
+}
+
+loadPopular();
+</script>
+</body>
+</html>
